@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF Generator Service</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-soft: #111827;
+      --card: #ffffff;
+      --line: #e5e7eb;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #059669;
+      --error: #dc2626;
+      --shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans Thai", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.25), transparent 28%),
+        radial-gradient(circle at top right, rgba(14, 165, 233, 0.18), transparent 24%),
+        linear-gradient(180deg, #0b1220 0%, #111827 100%);
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 24px;
+      color: #f8fafc;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.1;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 620px;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      font-size: 13px;
+    }
+
+    .health {
+      min-width: 180px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+    }
+
+    .health strong {
+      display: block;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .health span {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 22px 24px 0;
+    }
+
+    .card-head h2 {
+      margin: 0 0 6px;
+      font-size: 22px;
+    }
+
+    .card-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card-body {
+      padding: 22px 24px 24px;
+    }
+
+    label {
+      display: block;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    label:first-child { margin-top: 0; }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font: inherit;
+      background: #fff;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    textarea { resize: vertical; min-height: 120px; }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .summary-box {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+
+    .summary-row.total {
+      margin-top: 8px;
+      padding-top: 12px;
+      border-top: 1px solid #dbeafe;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-1px); }
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+    }
+
+    .btn-secondary {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status.show { display: block; }
+    .status.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .status.success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .status.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .endpoint-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .endpoint {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .endpoint code {
+      display: inline-block;
+      margin-bottom: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div>
+        <h1>PDF Generator Service</h1>
+        <p>
+          Microservice สำหรับรับ JSON ใบเสร็จ/ใบแจ้งหนี้ แล้ว merge กับ Template เพื่อสร้างไฟล์ PDF
+          ทดสอบ API ได้จากหน้านี้ทันที
+        </p>
+        <div class="badge-row">
+          <span class="badge">POST /generate-pdf</span>
+          <span class="badge">pdfmake + Handlebars</span>
+          <span class="badge">รองรับภาษาไทย</span>
+        </div>
+      </div>
+      <div class="health">
+        <strong>Service Status</strong>
+        <span id="healthText">Checking...</span>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <div class="card-head">
+          <h2>สร้างใบเสร็จ PDF</h2>
+          <p>กรอกข้อมูลด้านล่าง แล้วกดปุ่มเพื่อส่ง JSON ไปยัง API</p>
+        </div>
+        <div class="card-body">
+          <form id="invoiceForm" onsubmit="return false;">
+            <label for="customer">ชื่อลูกค้า / Customer name</label>
+            <input id="customer" value="สมชาย ใจดี">
+
+            <label for="invoiceNumber">เลขที่ใบเสร็จ / Invoice number</label>
+            <input id="invoiceNumber" value="INV-1001">
+
+            <label for="items">รายการสินค้า / Items (name,qty,price ต่อบรรทัด)</label>
+            <textarea id="items">Laptop,1,30000
+Mouse,2,500</textarea>
+            <div class="hint">ตัวอย่าง: <code>Laptop,1,30000</code></div>
+
+            <label for="notes">หมายเหตุ / Notes (optional)</label>
+            <textarea id="notes" rows="2" placeholder="ชำระภายใน 30 วัน"></textarea>
+
+            <label for="total">ยอดรวม / Total</label>
+            <input id="total" type="number" value="31000">
+          </form>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Actions</h2>
+          <p>ดาวน์โหลด PDF ตัวอย่าง หรือสร้าง PDF จากฟอร์ม</p>
+        </div>
+        <div class="card-body">
+          <div class="summary-box">
+            <div class="summary-row">
+              <span>จำนวนรายการ</span>
+              <strong id="itemCount">0</strong>
+            </div>
+            <div class="summary-row">
+              <span>ยอดคำนวณ</span>
+              <strong id="computedTotal">฿0.00</strong>
+            </div>
+            <div class="summary-row total">
+              <span>Total</span>
+              <strong id="displayTotal">฿31,000.00</strong>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn-secondary" id="sampleBtn">Download sample invoice (GET)</button>
+            <button type="button" class="btn-primary" id="postBtn">Send JSON POST</button>
+          </div>
+
+          <div id="status" class="status"></div>
+
+          <div class="endpoint-list">
+            <div class="endpoint"><code>POST /generate-pdf</code><br>รับ JSON → สร้าง PDF</div>
+            <div class="endpoint"><code>GET /pdf/invoice</code><br>ดาวน์โหลด PDF ตัวอย่าง</div>
+            <div class="endpoint"><code>GET /health</code><br>ตรวจสอบสถานะ service</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const sampleBtn = document.getElementById("sampleBtn");
+    const postBtn = document.getElementById("postBtn");
+    const statusEl = document.getElementById("status");
+    const healthText = document.getElementById("healthText");
+    const itemCountEl = document.getElementById("itemCount");
+    const computedTotalEl = document.getElementById("computedTotal");
+    const displayTotalEl = document.getElementById("displayTotal");
+
+    function setStatus(message, type) {
+      statusEl.textContent = message;
+      statusEl.className = "status show " + (type || "info");
+    }
+
+    function parseItems(text) {
+      return String(text || "")
+        .split(/\r?\n/)
+        .map(function (line) { return line.trim(); })
+        .filter(Boolean)
+        .map(function (line) {
+          const parts = line.split(",").map(function (part) { return part.trim(); });
+          return {
+            name: parts[0] || "",
+            qty: Number(parts[1] || 1),
+            price: Number(parts[2] || 0),
+          };
+        });
+    }
+
+    function formatBaht(value) {
+      return new Intl.NumberFormat("th-TH", {
+        style: "currency",
+        currency: "THB",
+        minimumFractionDigits: 2,
+      }).format(Number(value) || 0);
+    }
+
+    function updateSummary() {
+      const items = parseItems(document.getElementById("items").value);
+      const computed = items.reduce(function (sum, item) {
+        return sum + (Number(item.qty) || 0) * (Number(item.price) || 0);
+      }, 0);
+      const totalInput = document.getElementById("total");
+      const totalValue = totalInput.value ? Number(totalInput.value) : computed;
+
+      itemCountEl.textContent = String(items.length);
+      computedTotalEl.textContent = formatBaht(computed);
+      displayTotalEl.textContent = formatBaht(totalValue);
+    }
+
+    async function downloadPdf(url, options, filename) {
+      const response = await fetch(url, options);
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!response.ok) {
+        let message = "Request failed: " + response.status;
+        if (contentType.includes("application/json")) {
+          const errorBody = await response.json();
+          if (errorBody.error) message = errorBody.error;
+          if (errorBody.details) message += " - " + errorBody.details.join(", ");
+        }
+        throw new Error(message);
+      }
+
+      if (!contentType.includes("application/pdf")) {
+        const text = await response.text();
+        throw new Error(text || "Server did not return a PDF file");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    function buildPayload() {
+      const items = parseItems(document.getElementById("items").value);
+      const computed = items.reduce(function (sum, item) {
+        return sum + (Number(item.qty) || 0) * (Number(item.price) || 0);
+      }, 0);
+      const totalField = document.getElementById("total").value;
+      const notes = document.getElementById("notes").value.trim();
+
+      return {
+        customerName: document.getElementById("customer").value.trim(),
+        invoiceNumber: document.getElementById("invoiceNumber").value.trim(),
+        items: items,
+        total: totalField ? Number(totalField) : computed,
+        notes: notes || undefined,
+      };
+    }
+
+    sampleBtn.addEventListener("click", async function () {
+      sampleBtn.disabled = true;
+      postBtn.disabled = true;
+      setStatus("Generating sample invoice...", "info");
+
+      try {
+        await downloadPdf("/pdf/invoice", { method: "GET" }, "sample-invoice.pdf");
+        setStatus("Sample invoice downloaded.", "success");
+      } catch (error) {
+        setStatus(error.message, "error");
+      } finally {
+        sampleBtn.disabled = false;
+        postBtn.disabled = false;
+      }
+    });
+
+    postBtn.addEventListener("click", async function () {
+      sampleBtn.disabled = true;
+      postBtn.disabled = true;
+      setStatus("Generating PDF from JSON...", "info");
+
+      const payload = buildPayload();
+
+      try {
+        await downloadPdf(
+          "/generate-pdf",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+          payload.invoiceNumber ? "invoice-" + payload.invoiceNumber + ".pdf" : "invoice.pdf"
+        );
+        setStatus("Invoice PDF downloaded.", "success");
+      } catch (error) {
+        setStatus(error.message, "error");
+      } finally {
+        sampleBtn.disabled = false;
+        postBtn.disabled = false;
+      }
+    });
+
+    ["items", "total"].forEach(function (id) {
+      document.getElementById(id).addEventListener("input", updateSummary);
+    });
+
+    fetch("/health")
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        healthText.textContent = data.status === "ok" ? "Online" : "Unknown";
+      })
+      .catch(function () {
+        healthText.textContent = "Offline";
+      });
+
+    updateSummary();
+  </script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PDF Generator Service</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #0f172a;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #059669;
+      --error: #dc2626;
+      --shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.35), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.25), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      padding: 32px 16px;
+    }
+
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      color: #fff;
+      margin-bottom: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      line-height: 1.1;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 680px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 1.25rem;
+    }
+
+    .card .subtitle {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    .hint {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.82rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      margin-top: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font: inherit;
+      background: #f8fafc;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #93c5fd;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+    }
+
+    .btn-secondary {
+      background: #eef2ff;
+      color: #1e3a8a;
+    }
+
+    .status {
+      margin-top: 16px;
+      min-height: 24px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .status.success { color: var(--success); }
+    .status.error { color: var(--error); }
+
+    .info-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .info-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+
+    .info-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .info-list span {
+      color: var(--muted);
+    }
+
+    code {
+      background: #eff6ff;
+      color: #1d4ed8;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .endpoint {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #334155;
+      word-break: break-all;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="badge">PDF Generator Service</div>
+      <h1>สร้างใบเสร็จ PDF จาก JSON</h1>
+      <p>Microservice สำหรับรับข้อมูลใบเสร็จ แปลงเป็น PDF และดาวน์โหลดได้ทันที รองรับภาษาไทยและทดสอบผ่าน API ได้จากหน้านี้</p>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>สร้างใบเสร็จ</h2>
+        <p class="subtitle">กรอกข้อมูลแล้วกดสร้าง PDF ระบบจะส่ง <code>POST /generate-pdf</code> ให้อัตโนมัติ</p>
+
+        <form id="form" onsubmit="return false;">
+          <label>
+            ชื่อลูกค้า
+            <span class="hint">customerName</span>
+            <input id="customer" value="สมชาย ใจดี" />
+          </label>
+
+          <label>
+            เลขที่ใบเสร็จ
+            <span class="hint">invoiceNumber</span>
+            <input id="invoiceNumber" value="INV-1001" />
+          </label>
+
+          <label>
+            รายการสินค้า
+            <span class="hint">name,qty,price ต่อบรรทัด</span>
+            <textarea id="items">Laptop,1,30000
+Mouse,2,500</textarea>
+          </label>
+
+          <label>
+            ยอดรวม
+            <span class="hint">total</span>
+            <input id="total" type="number" value="31000" />
+          </label>
+
+          <div class="actions">
+            <button class="btn-primary" id="post" type="button">สร้าง PDF</button>
+            <button class="btn-secondary" id="sample" type="button">ดาวน์โหลดตัวอย่าง</button>
+          </div>
+        </form>
+
+        <div id="status" class="status"></div>
+      </section>
+
+      <aside class="card">
+        <h2>API Overview</h2>
+        <p class="subtitle">Endpoints ที่ใช้ในโปรเจกต์นี้</p>
+
+        <ul class="info-list">
+          <li><strong>POST</strong> <span>/generate-pdf</span></li>
+          <li><strong>GET</strong> <span>/pdf/invoice</span></li>
+          <li><strong>GET</strong> <span>/health</span></li>
+        </ul>
+
+        <div class="endpoint">
+          <strong>Engine:</strong> pdfmake + Handlebars<br>
+          <strong>Template:</strong> src/templates/invoice.hbs<br>
+          <strong>Font:</strong> Noto Sans Thai
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const sampleBtn = document.getElementById("sample");
+    const postBtn = document.getElementById("post");
+
+    function setStatus(message, type) {
+      statusEl.textContent = message || "";
+      statusEl.className = "status" + (type ? " " + type : "");
+    }
+
+    function parseItems(text) {
+      return text
+        .split(/\r?\n/)
+        .map(function (line) { return line.trim(); })
+        .filter(Boolean)
+        .map(function (line) {
+          const parts = line.split(",").map(function (part) { return part.trim(); });
+          return {
+            name: parts[0] || "",
+            qty: Number(parts[1] || 1),
+            price: Number(parts[2] || 0),
+          };
+        });
+    }
+
+    async function downloadPdf(url, options, filename) {
+      const response = await fetch(url, options);
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!response.ok) {
+        let message = "Request failed: " + response.status;
+        if (contentType.includes("application/json")) {
+          const errorBody = await response.json();
+          if (errorBody.error) message = errorBody.error;
+          if (errorBody.details) message += " - " + errorBody.details.join(", ");
+        }
+        throw new Error(message);
+      }
+
+      if (!contentType.includes("application/pdf")) {
+        const text = await response.text();
+        throw new Error(text || "Server did not return a PDF file");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    function setLoading(isLoading) {
+      sampleBtn.disabled = isLoading;
+      postBtn.disabled = isLoading;
+      postBtn.textContent = isLoading ? "กำลังสร้าง PDF..." : "สร้าง PDF";
+    }
+
+    sampleBtn.addEventListener("click", async function () {
+      setLoading(true);
+      setStatus("กำลังดาวน์โหลดใบเสร็จตัวอย่าง...");
+
+      try {
+        await downloadPdf("/pdf/invoice", { method: "GET" }, "sample-invoice.pdf");
+        setStatus("ดาวน์โหลดตัวอย่างสำเร็จ", "success");
+      } catch (error) {
+        setStatus(error.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    postBtn.addEventListener("click", async function () {
+      setLoading(true);
+      setStatus("กำลังสร้าง PDF จาก JSON...");
+
+      const body = {
+        customerName: document.getElementById("customer").value,
+        invoiceNumber: document.getElementById("invoiceNumber").value,
+        items: parseItems(document.getElementById("items").value),
+        total: Number(document.getElementById("total").value),
+      };
+
+      try {
+        await downloadPdf(
+          "/generate-pdf",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          },
+          "invoice.pdf"
+        );
+        setStatus("สร้าง PDF สำเร็จ — ไฟล์ถูกดาวน์โหลดแล้ว", "success");
+      } catch (error) {
+        setStatus(error.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="invoice.pdf"
+Date: Mon, 22 Jun 2026 07:48:11 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

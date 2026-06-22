@@ -1,0 +1,123 @@
+const express = require("express");
+const router = express.Router();
+
+const generatePdf = require("../services/pdfGenerator");
+const puppeteerPdf = require("../services/pdfPuppeteer");
+
+router.post("/generate-pdf", (req, res) => {
+  const body = Object.assign({}, req.body || {});
+  // If items came from a URL-encoded form, parse the textarea format
+  if (typeof body.items === 'string') {
+    const lines = body.items.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    body.items = lines.map(line => {
+      const parts = line.split(',').map(p => p.trim());
+      return { name: parts[0]||'', qty: Number(parts[1]||1), price: parts[2]||'' };
+    });
+  }
+  generatePdf(body, res);
+});
+
+// Simple browser test page to POST JSON and download the PDF
+router.get("/generate-pdf", (req, res) => {
+  res.type('html').send(`
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>Generate PDF</title>
+      <style>
+        body{font-family: Arial, Helvetica, sans-serif; padding:20px; max-width:800px; margin:0 auto}
+        h1{font-size:28px;margin-bottom:10px}
+        .card{background:#fff;border:1px solid #eee;padding:16px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+        label{display:block;margin-top:8px;font-weight:600}
+        input, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ddd;border-radius:4px}
+        button{margin-top:10px;padding:8px 12px;border-radius:4px;border:1px solid #888;background:#f6f6f6;cursor:pointer}
+        .row{display:flex;gap:8px}
+        .col{flex:1}
+      </style>
+    </head>
+    <body>
+      <h1>Generate PDF</h1>
+      <div class="card">
+        <p>Quick test: download a sample invoice or POST your own data.</p>
+        <div style="margin-bottom:8px">
+          <button id="sample">Download sample invoice (GET)</button>
+        </div>
+
+        <form id="form">
+          <label>Customer name</label>
+          <input id="customer" value="John Doe" />
+
+          <label>Items (one per line: name,qty,price)</label>
+          <textarea id="items" rows="4">Laptop,1,30000
+Mouse,2,500</textarea>
+
+          <label>Total</label>
+          <input id="total" value="31000" />
+
+          <div style="margin-top:10px">
+            <button type="button" id="post">Send JSON POST</button>
+          </div>
+        </form>
+      </div>
+      <script>
+        document.getElementById('sample').onclick = () => {
+          window.location.href = '/pdf/invoice';
+        };
+
+        document.getElementById('post').onclick = async () => {
+          const customerName = document.getElementById('customer').value;
+          const total = Number(document.getElementById('total').value) || 0;
+          const raw = document.getElementById('items').value.split('\n').map(l=>l.trim()).filter(Boolean);
+          const items = raw.map(line=>{
+            const parts = line.split(',').map(p=>p.trim());
+            return { name: parts[0]||'', qty: Number(parts[1]||1), price: parts[2]||'' };
+          });
+          const body = { customerName, items, total };
+          const resp = await fetch('/generate-pdf', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+          });
+          if (!resp.ok) { alert('Request failed: '+resp.status); return }
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'invoice.pdf'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// Direct GET that generates a sample invoice (useful for browser testing)
+router.get('/pdf/invoice', (req, res) => {
+  const sample = {
+    customerName: 'Sample Customer',
+    items: [ { name: 'Service A', qty: 1, price: 100 }, { name: 'Service B', qty: 2, price: 50 } ],
+    total: 200
+  };
+  // Use Puppeteer renderer for template fidelity
+  puppeteerPdf.generatePdf(sample, res).catch(err => {
+    console.error('Puppeteer PDF error', err);
+    // fallback to PDFKit renderer
+    generatePdf(sample, res);
+  });
+});
+
+// New endpoint that uses HTML rendering (Puppeteer) for richer templates
+router.post('/generate-pdf-html', (req, res) => {
+  const body = Object.assign({}, req.body || {});
+  if (typeof body.items === 'string') {
+    const lines = body.items.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    body.items = lines.map(line => {
+      const parts = line.split(',').map(p => p.trim());
+      return { name: parts[0]||'', qty: Number(parts[1]||1), price: parts[2]||'' };
+    });
+  }
+  puppeteerPdf.generatePdf(body, res).catch(err => {
+    console.error('Puppeteer generation failed', err);
+    res.status(500).send('PDF generation error');
+  });
+});
+
+module.exports = router;
